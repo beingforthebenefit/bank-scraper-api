@@ -87,6 +87,15 @@
             font-weight: bold;
             color: #33CC99;
             margin-bottom: 8px;
+            display: flex;
+            align-items: baseline;
+        }
+
+        .balance-limit {
+            font-size: 0.6em;
+            color: #ccc;
+            font-weight: normal;
+            margin-left: 2px;
         }
 
         .credit-info {
@@ -95,18 +104,23 @@
             margin-bottom: 8px;
         }
 
+        .utilization-container {
+            position: relative;
+            margin-bottom: 8px;
+        }
+
         .utilization-bar {
             width: 100%;
-            height: 12px;
+            height: 16px;
             background: rgba(255, 255, 255, 0.2);
-            border-radius: 6px;
+            border-radius: 8px;
             overflow: hidden;
-            margin-bottom: 3px;
+            position: relative;
         }
 
         .utilization-fill {
             height: 100%;
-            border-radius: 6px;
+            border-radius: 8px;
             transition: width 0.3s ease;
             background: linear-gradient(90deg, #33CC99, #FFB89A);
         }
@@ -116,10 +130,16 @@
         }
 
         .utilization-text {
-            font-size: 0.75em;
-            color: #ccc;
-            text-align: center;
-            margin-bottom: 8px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 0.7em;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+            z-index: 1;
+            pointer-events: none;
         }
 
         .payment-section {
@@ -179,11 +199,12 @@
 
         .total-utilization .bar {
             width: 100%;
-            height: 14px;
+            height: 16px;
             background: rgba(255, 255, 255, 0.2);
-            border-radius: 7px;
+            border-radius: 8px;
             overflow: hidden;
             margin-top: 5px;
+            position: relative;
         }
 
         .total-utilization .fill {
@@ -194,6 +215,18 @@
 
         .total-utilization .fill.high {
             background: linear-gradient(90deg, #FF6B6B, #FF8E53);
+        }
+
+        .total-utilization .percentage {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 0.7em;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+            z-index: 1;
         }
     </style>
 </head>
@@ -210,6 +243,15 @@
             return new Intl.NumberFormat('en-US', {
                 style: 'currency',
                 currency: 'USD'
+            }).format(amount);
+        }
+
+        function formatCurrencyNoDecimals(amount) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
             }).format(amount);
         }
 
@@ -277,15 +319,13 @@
 
             let creditSection = '';
             if (account.availableCredit) {
-                const availableAmount = account.availableCredit - account.balance;
                 creditSection = `
-                    <div class="credit-info">
-                        ${formatCurrency(availableAmount)} available
+                    <div class="utilization-container">
+                        <div class="utilization-bar">
+                            <div class="utilization-fill ${utilizationClass}" style="width: ${utilization}%"></div>
+                            <div class="utilization-text">${Math.round(utilization)}%</div>
+                        </div>
                     </div>
-                    <div class="utilization-bar">
-                        <div class="utilization-fill ${utilizationClass}" style="width: ${utilization}%"></div>
-                    </div>
-                    <div class="utilization-text">${utilization.toFixed(1)}% used</div>
                 `;
             }
 
@@ -294,7 +334,9 @@
                     <div class="card-name">${account.name}</div>
                     <div class="account-number">${account.accountNumber ? '•••• ' + account.accountNumber : ''}</div>
                 </div>
-                <div class="balance-amount">${formatCurrency(account.balance)}</div>
+                <div class="balance-amount">
+                    <span>${formatCurrency(account.balance)}</span>${account.availableCredit ? `<span class="balance-limit">/${formatCurrencyNoDecimals(account.availableCredit)}</span>` : ''}
+                </div>
                 ${creditSection}
                 ${paymentSection}
             `;
@@ -325,9 +367,10 @@
             const totalUtilDiv = document.createElement('div');
             totalUtilDiv.className = 'total-utilization';
             totalUtilDiv.innerHTML = `
-                Total Utilization: ${totalUtil.toFixed(1)}%
+                Total Utilization
                 <div class="bar">
                     <div class="fill ${totalUtilClass}" style="width: ${totalUtil}%"></div>
+                    <div class="percentage">${Math.round(totalUtil)}%</div>
                 </div>
             `;
             contentDiv.appendChild(totalUtilDiv);
