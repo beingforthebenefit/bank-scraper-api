@@ -48,4 +48,4 @@ curl "http://your-server/balance?key=your-key"
 3. **📊 Dashboard updates** → Widget refreshes every 10 minutes
 4. **✨ Done!** → Hands-free balance tracking
 
-Total time investment: **~10 minutes setup, lifetime of automation** 
+Total time investment: **~10 minutes setup, lifetime of free automation** 

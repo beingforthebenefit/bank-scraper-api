@@ -18,6 +18,21 @@ Transform manual balance checking into automatic dashboard updates:
 
 ---
 
+## 💡 Why This Approach?
+
+| Traditional Methods | This Solution |
+|-------------------|---------------|
+| 💰 Third-party APIs (Plaid: $0.25/account) | 🆓 Completely free |
+| 🔐 Store banking credentials | 🛡️ Zero credentials needed |
+| 🕷️ Web scraping (ToS violations) | ✅ Manual, compliant process |
+| 🤖 Complex 2FA handling | 📱 You handle login naturally |
+| ⏰ Scheduled scraping delays | ⚡ Instant updates on demand |
+| 🏦 Limited bank support | 🔧 Add any bank with text parsing |
+
+**Important:** Banks don't provide direct APIs to customers - you're forced to use expensive third-party services like Plaid, Yodlee, or Finicity. This solution bypasses that entirely.
+
+---
+
 ## 🚀 Complete Setup Guide
 
 ### Step 1: Install the iOS Shortcut Template
@@ -100,9 +115,9 @@ https://your-server.com/update-balances
 
 ## 🎛️ Dashboard Integration
 
-### Dakboard Widget
+### Example Dashboard Widget
 
-Use the included `examples/dakboard-widget.html` for a ready-to-use credit card dashboard:
+Use the included `examples/dakboard-widget.html` as a starting point:
 
 **Features:**
 - 💳 Multiple credit cards in grid layout
@@ -111,10 +126,17 @@ Use the included `examples/dakboard-widget.html` for a ready-to-use credit card 
 - 🎯 Total utilization tracking
 - ⏰ Auto-refresh every 10 minutes
 
+**Works with:**
+- 🆓 **Dakboard** (requires Pro for custom JS, but many free alternatives exist)
+- 🆓 **Grafana** - Free dashboard platform
+- 🆓 **Home Assistant** - Open source home automation
+- 🆓 **Custom web pages** - Host anywhere
+- 🆓 **Any dashboard** that can fetch JSON APIs
+
 **Setup:**
-1. Upload `examples/dakboard-widget.html` to your web server
+1. Upload `examples/dakboard-widget.html` to any web server
 2. Update API URL and key in the HTML
-3. Add as Custom HTML block in Dakboard
+3. Embed in your dashboard of choice
 
 ### Other Dashboards
 
@@ -194,18 +216,6 @@ The text parsing system can be extended for other banks. Check `server.js` for p
 **Timing issues:**
 - Banking apps need to be fully loaded before automation runs
 - Close and reopen app if prompt disappears too quickly
-
----
-
-## 💡 Why This Approach?
-
-| Traditional Methods | This Solution |
-|-------------------|---------------|
-| 💰 Expensive APIs (Plaid: $0.25/account) | 🆓 Free after initial setup |
-| 🔐 Store banking credentials | 🛡️ Zero credentials needed |
-| 🕷️ Web scraping (ToS violations) | ✅ Manual, compliant process |
-| 🤖 Complex 2FA handling | 📱 You handle login naturally |
-| ⏰ Scheduled scraping delays | ⚡ Instant updates on demand |
 
 ---
 
