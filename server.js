@@ -23,8 +23,8 @@ let balanceData = {
 // Helper function to get available credit based on account number
 function getAvailableCredit(accountNumber) {
   const creditLimits = {
-    '2006': 3000,
-    '6958': 5100,
+    '2006': 3300,
+    '6958': 5300,
     '1069': 5800
   };
   
