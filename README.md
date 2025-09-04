@@ -1,228 +1,72 @@
-# 📱💳 iOS Banking Dashboard Automation
+# Bank Scraper API
 
-**Sync your credit card balances from Capital One and Apple Card to any dashboard in seconds using iOS Shortcuts automation.**
+Minimal API to parse OCR text payloads into normalized credit card balances.
 
-![Dakboard Dashboard](screenshots/dakboard-dashboard.png)
+Supports:
+- Capital One cards (e.g., SAVOR) with last4 and current balance
+- Apple Card (Mastercard) with current balance (no last4)
 
-## ✨ What This Does
+Limits used (built-in):
+- 6958 → $5300
+- 1069 → $5800
+- Apple Card → $2000
 
-Transform manual balance checking into automatic dashboard updates:
+## Run
 
-1. **📱 Open Banking App** → iOS detects and runs automation
-2. **🤖 Data Extraction** → Shortcuts captures account data 
-3. **📊 Dashboard Update** → Your display refreshes instantly
-
-**No credentials stored. No web scraping. Just iOS automation magic.**
-
-**🚀 [Quick Start Guide](docs/QUICK_START.md) | 📚 [Technical Docs](docs/TECHNICAL.md)**
-
----
-
-## 💡 Why This Approach?
-
-| Traditional Methods | This Solution |
-|-------------------|---------------|
-| 💰 Third-party APIs (Plaid: $0.25/account) | 🆓 Completely free |
-| 🔐 Store banking credentials | 🛡️ Zero credentials needed |
-| 🕷️ Web scraping (ToS violations) | ✅ Manual, compliant process |
-| 🤖 Complex 2FA handling | 📱 You handle login naturally |
-| ⏰ Scheduled scraping delays | ⚡ Instant updates on demand |
-| 🏦 Limited bank support | 🔧 Add any bank with text parsing |
-
-**Important:** Banks don't provide direct APIs to customers - you're forced to use expensive third-party services like Plaid, Yodlee, or Finicity. This solution bypasses that entirely.
-
----
-
-## 🚀 Complete Setup Guide
-
-### Step 1: Install the iOS Shortcut Template
-
-Download and install the pre-configured Shortcut template:
-
-**📥 [Install iOS Shortcut Template](https://www.icloud.com/shortcuts/82a807520ded4db7b5d06b26fe71cfc8)**
-
-![Shortcut Template](screenshots/shortcut.png)
-
-The template includes:
-- ✅ Text extraction from banking apps
-- ✅ Data parsing for Capital One & Apple Card
-- ✅ API endpoint configuration
-- ✅ Screenshot OCR fallback
-
-### Step 2: Configure Automation Triggers
-
-Set up automatic triggers for your banking apps:
-
-![Automation Setup](screenshots/automation.png)
-
-Create automations for:
-- **Capital One app** - Triggers when app opens
-- **Wallet app** - Triggers when app opens
-- **Manual trigger** - Run anytime from Shortcuts
-
-### Step 3: Deploy the API Server
-
-**Quick Docker Setup:**
-```bash
-git clone <your-repo>
-cd bank-scraper-api
-cp env.template .env
-# Edit .env with your API key
-docker-compose up -d
+Local:
 ```
-
-**Manual Setup:**
-```bash
 npm install
-export API_KEY=your-secret-key
-export PORT=3000
-npm start
+PORT=3000 API_KEY=yourkey npm start
 ```
 
-### Step 4: Update Shortcut Configuration
-
-In your iOS Shortcut, update the **"Text"** action with your server URL:
+Docker:
 ```
-https://your-server.com/update-balances
+docker build -t bank-scraper-api .
+docker run -p 3000:3000 -e API_KEY=yourkey bank-scraper-api
 ```
 
----
+Optional persistence: set `DATA_DIR` (defaults to `.state`) and `PERSIST=true|false`.
 
-## 📱 Using the Automation
+## Endpoints
 
-### Capital One Usage
+- `/health` GET: Basic health.
+- `/ingest` POST: Accepts `text/plain` body or JSON `{ text: "..." }`. Returns parsed accounts.
+- `/balances` GET: Returns last parsed result. If `API_KEY` is set, provide it via `?key=` or header `x-api-key`.
 
-1. **Open Capital One app**
-2. **Wait for automation prompt** (may take 2-3 seconds)
-3. **Tap "Run"** when prompted
+Example (Capital One):
+```
+6:48
+84
+Capital One
 
-![Capital One Usage](screenshots/automation-usage-capital-one.png)
+SAVOR R6958
+$0.00
+Current balance
+SAVOR.1069
+$0.00
+Current balance
+```
 
-**⚠️ Timing Note:** If you're not logged in, the automation prompt may disappear before you log in. Simply close and relaunch the app, then tap "Run".
+Example (Apple Card):
+```
+6:49
+mastercard
+Card Balance
+$1,773.44
+$226.56 Available
+Payment Due Sep 30
+```
 
-### Apple Card Usage
-
-1. **Open Wallet app**
-2. **Tap Apple Card**
-3. **Wait for automation prompt**
-4. **Tap "Run"** when prompted
-
-![Wallet Usage](screenshots/automation-usage-wallet.png)
-
-**⚠️ Same timing caveat applies** - relaunch if the prompt disappears too quickly.
-
----
-
-## 🎛️ Dashboard Integration
-
-### Example Dashboard Widget
-
-Use the included `examples/dakboard-widget.html` as a starting point:
-
-**Features:**
-- 💳 Multiple credit cards in grid layout
-- 📊 Utilization bars with percentages
-- 💰 Balance/Limit display (e.g., `$300/$1200`)
-- 🎯 Total utilization tracking
-- ⏰ Auto-refresh every 10 minutes
-
-**Works with:**
-- 🆓 **Dakboard** (requires Pro for custom JS, but many free alternatives exist)
-- 🆓 **Grafana** - Free dashboard platform
-- 🆓 **Home Assistant** - Open source home automation
-- 🆓 **Custom web pages** - Host anywhere
-- 🆓 **Any dashboard** that can fetch JSON APIs
-
-**Setup:**
-1. Upload `examples/dakboard-widget.html` to any web server
-2. Update API URL and key in the HTML
-3. Embed in your dashboard of choice
-
-### Other Dashboards
-
-The API returns standard JSON that works with any dashboard:
-
-```javascript
-// Example API response
+Response shape:
+```
 {
-  "success": true,
+  "ok": true,
+  "count": 2,
   "accounts": [
-    {
-      "name": "QUICKSILVER",
-      "balance": 1689.77,
-      "availableCredit": 3000,
-      "type": "credit_card"
-    }
-  ],
-  "lastUpdated": "2024-06-22T21:30:00.000Z"
+    { "issuer":"Capital One", "product":"SAVOR", "last4":"6958", "balance":0, "limit":5300, "utilization":0 },
+    { "issuer":"Capital One", "product":"SAVOR", "last4":"1069", "balance":0, "limit":5800, "utilization":0 }
+  ]
 }
 ```
 
----
-
-## 🔧 API Endpoints
-
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| `/update-balances` | POST | Receive data from iOS Shortcut |
-| `/balance?key=API_KEY` | GET | Dashboard data retrieval |
-| `/health` | GET | Health check |
-| `/status` | GET | Current data status |
-
----
-
-## 🛡️ Security & Privacy
-
-- ✅ **No banking credentials stored**
-- ✅ **Data processed locally on your server**
-- ✅ **Manual control - you trigger updates**
-- ✅ **API key protection**
-- ✅ **No web scraping or ToS violations**
-
----
-
-## 📱 Android Alternative
-
-While this guide focuses on iOS, the concept works on Android too:
-
-- **Tasker** - Create similar automations
-- **MacroDroid** - App-triggered shortcuts
-- **Manual** - Use included clipboard scripts (`examples/send-clipboard.sh` or `examples/send-clipboard.py`)
-
----
-
-## 🛠️ Supported Banks
-
-### ✅ Currently Supported
-- **Capital One** (All card types: Quicksilver, Savor, Venture, etc.)
-- **Apple Card** (via Wallet app)
-
-### 🔄 Adding More Banks
-The text parsing system can be extended for other banks. Check `server.js` for parsing logic examples.
-
----
-
-## 🚨 Troubleshooting
-
-**Automation not triggering:**
-- Check iOS Settings → Shortcuts → Advanced → Allow Running Scripts
-- Verify automation is enabled in Shortcuts app
-
-**Data not updating:**
-- Check API server logs: `docker logs <container-name>`
-- Verify API key in shortcut matches server
-- Test with manual POST: `curl -X POST your-server/update-balances -d "test"`
-
-**Timing issues:**
-- Banking apps need to be fully loaded before automation runs
-- Close and reopen app if prompt disappears too quickly
-
----
-
-## 📄 License
-
-MIT License - Use freely for personal or commercial projects.
-
----
-
-**🎯 Result: Turn your phone into a banking data pipeline with zero security compromise.**
+License: MIT
