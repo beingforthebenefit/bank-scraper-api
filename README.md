@@ -61,12 +61,34 @@ Response shape:
 ```
 {
   "ok": true,
-  "count": 2,
+  "success": true,
+  "lastIngestedAt": "2024-09-03T19:37:00.000Z",
+  "lastUpdated": "2024-09-03T19:37:00.000Z",
   "accounts": [
-    { "issuer":"Capital One", "product":"SAVOR", "last4":"6958", "balance":0, "limit":5300, "utilization":0 },
-    { "issuer":"Capital One", "product":"SAVOR", "last4":"1069", "balance":0, "limit":5800, "utilization":0 }
+    {
+      "issuer": "Capital One",
+      "product": "SAVOR",
+      "last4": "6958",
+      "balance": 0,
+      "limit": 5300,
+      "utilization": 0,
+      "dueDate": null,
+      "minimumPayment": null,
+      "paymentMet": true,
+      "kind": "credit_card",
+      // Aliases for widget consumers
+      "type": "credit_card",
+      "name": "SAVOR",
+      "accountNumber": "6958",
+      "availableCredit": 5300
+    }
   ]
 }
 ```
+
+Notes:
+- The `/balances` response preserves original fields and adds aliases (`success`, `lastUpdated`, and account aliases like `type`, `name`, `accountNumber`, `availableCredit`) for widget consumers.
+- Apple Card now reports a `dueDate` when present, and its limit is derived from `balance + available` when both are present; otherwise it falls back to a configured default.
+- New fields per account: `minimumPayment` (number|null) and `paymentMet` (boolean). For Capital One, `minimumPayment` is parsed from lines like "Minimum $35.00 due 09/30/2024"; `paymentMet` is true when minimum is 0 or when no due/minimum is detected. For Apple Card, `paymentMet` is true when no "Payment Due" line is present.
 
 License: MIT

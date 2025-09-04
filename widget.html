@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Credit Cards</title>
+  <style>
+    body, html {
+      margin: 0;
+      font-family: 'Arial', sans-serif;
+      background: transparent;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      padding: 10px;
+    }
+    .credit-cards-container {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 6px;
+    }
+    .card-item {
+      background: rgba(49, 46, 46, 0.8);
+      border-radius: 8px;
+      padding: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+      color: white;
+      text-shadow: 1px 1px 2px black;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 4px;
+    }
+    .card-name {
+      font-size: 1em;
+      font-weight: bold;
+      color: #FFB89A;
+    }
+    .acct-last4 {
+      font-size: 0.8em;
+      color: #ccc;
+      margin-left: 4px;
+    }
+    .account-balance {
+      display: flex;
+      align-items: baseline;
+    }
+    .balance-num {
+      font-size: 1em;
+      font-weight: bold;
+      margin-right: 4px;
+    }
+    .balance-den {
+      font-size: 0.7em;
+      color: #ccc;
+    }
+    .utilization-container {
+      position: relative;
+      margin-bottom: 6px;
+    }
+    .utilization-bar {
+      width: 100%;
+      height: 14px; /* increased height */
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      overflow: hidden;
+      position: relative;
+    }
+    .utilization-fill {
+      height: 100%;
+      border-radius: 8px;
+      transition: width 0.3s ease;
+      background: linear-gradient(90deg, #33CC99, #FFB89A);
+    }
+    .utilization-fill.high {
+      background: linear-gradient(90deg, #FF6B6B, #FF8E53);
+    }
+    .utilization-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 0.8em; /* increased font size */
+      font-weight: bold;
+      color: white;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+    }
+    .payment-section {
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+      padding-top: 6px;
+      margin-top: 6px;
+    }
+    .payment-due,
+    .payment-met {
+      font-size: 0.7em;
+    }
+    .last-updated {
+      text-align: center;
+      color: #ccc;
+      font-size: 0.7em;
+      margin-top: 8px;
+      opacity: 0.7;
+    }
+    .total-utilization {
+      text-align: center;
+      font-size: 1em;
+      color: white;
+      margin-bottom: 6px;
+      text-shadow: 1px 1px 2px black;
+    }
+    .total-utilization .bar {
+      width: 100%;
+      height: 16px; /* increased height */
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      overflow: hidden;
+      position: relative;
+      margin-top: 4px;
+    }
+    .total-utilization .fill {
+      height: 100%;
+      transition: width 0.3s ease;
+      background: linear-gradient(90deg, #33CC99, #FFB89A);
+    }
+    .total-utilization .fill.high {
+      background: linear-gradient(90deg, #FF6B6B, #FF8E53);
+    }
+    .total-utilization .percentage {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 0.8em; /* increased font size */
+      font-weight: bold;
+      color: white;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+    }
+    .loading {
+      text-align: center;
+      color: white;
+      font-size: 1em;
+      padding: 15px;
+    }
+    .error-message {
+      background: rgba(229, 89, 79, 0.8);
+      border-radius: 12px;
+      padding: 15px;
+      color: white;
+      text-align: center;
+      font-size: 1em;
+    }
+  </style>
+</head>
+<body>
+  <div id="content">
+    <div class="loading">Loading...</div>
+  </div>
+
+  <script>
+    const API_URL = 'https://credit.76flix.com/balances';
+    const API_KEY = 'N11Urcbrl4G8hqJNRYN';
+
+    function formatCurrency(a) {
+      return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(a);
+    }
+    function formatCurrencyNoDecimals(a) {
+      return new Intl.NumberFormat('en-US',{
+        style:'currency',
+        currency:'USD',
+        minimumFractionDigits:0,
+        maximumFractionDigits:0
+      }).format(a);
+    }
+    function formatDate(s) {
+      if(!s) return '';
+      const p = s.split('/');
+      if(p.length === 3){
+        let [m, d, y] = p;
+        if(y.length === 2) y = '20' + y;
+        return new Date(y, m-1, d)
+          .toLocaleDateString('en-US',{month:'short',day:'numeric'});
+      }
+      return /^[A-Za-z]{3}\s+\d{1,2}$/.test(s) ? s : s;
+    }
+    function calcUtil(b, l) {
+      return l ? Math.min((b/l)*100, 100) : 0;
+    }
+
+    function createCreditCardElement(ac) {
+      const card = document.createElement('div');
+      card.className = 'card-item';
+
+      const util = calcUtil(ac.balance, ac.availableCredit);
+      const color = util > 70 ? '#FF6B6B' : '#33CC99';
+
+      // header
+      const nameHTML = ac.accountNumber
+        ? `<span class="card-name">${ac.name}</span><span class="acct-last4">•••• ${ac.accountNumber}</span>`
+        : `<span class="card-name">${ac.name}</span>`;
+      const balHTML = ac.availableCredit != null
+        ? `<div class="account-balance">
+             <span class="balance-num" style="color:${color}">${formatCurrency(ac.balance)}</span>
+             <span class="balance-den">/${formatCurrencyNoDecimals(ac.availableCredit)}</span>
+           </div>`
+        : `<div class="account-balance">
+             <span class="balance-num" style="color:${color}">${formatCurrency(ac.balance)}</span>
+           </div>`;
+
+      const hdr = `<div class="card-header">${nameHTML}${balHTML}</div>`;
+
+      // bar
+      const bar = ac.availableCredit != null
+        ? `<div class="utilization-container">
+             <div class="utilization-bar">
+               <div class="utilization-fill ${util>70?'high':''}" style="width:${util}%"></div>
+               <div class="utilization-text">${Math.round(util)}%</div>
+             </div>
+           </div>`
+        : '';
+
+      // payment status
+      let pay = '';
+      const met = ac.paymentMet === true || (!ac.minimumPayment && !ac.dueDate);
+      if (met) {
+        pay = `<div class="payment-section"><div class="payment-met">✓ Payment met</div></div>`;
+      } else if (ac.minimumPayment != null && ac.dueDate) {
+        pay = `<div class="payment-section"><div class="payment-due">Min ${formatCurrency(ac.minimumPayment)} by ${formatDate(ac.dueDate)}</div></div>`;
+      } else if (ac.dueDate) {
+        pay = `<div class="payment-section"><div class="payment-due">Due ${formatDate(ac.dueDate)}</div></div>`;
+      }
+
+      card.innerHTML = hdr + bar + pay;
+      return card;
+    }
+
+    function displayData(data) {
+      const root = document.getElementById('content');
+      root.innerHTML = '';
+
+      const cards = data.accounts.filter(a => a.type === 'credit_card');
+      let sumB = 0, sumL = 0;
+      cards.forEach(a => {
+        if (a.availableCredit) {
+          sumB += a.balance;
+          sumL += a.availableCredit;
+        }
+      });
+      const totalUtil = sumL ? (sumB/sumL)*100 : 0;
+      const totalClass = totalUtil > 70 ? 'high' : '';
+
+      const tot = document.createElement('div');
+      tot.className = 'total-utilization';
+      tot.innerHTML = `
+        Total Utilization
+        <div class="bar">
+          <div class="fill ${totalClass}" style="width:${totalUtil}%"></div>
+          <div class="percentage">${Math.round(totalUtil)}%</div>
+        </div>`;
+      root.appendChild(tot);
+
+      const grid = document.createElement('div');
+      grid.className = 'credit-cards-container';
+      cards.forEach(a => grid.appendChild(createCreditCardElement(a)));
+      root.appendChild(grid);
+
+      const upd = document.createElement('div');
+      upd.className = 'last-updated';
+      upd.textContent = `Updated: ${new Date(data.lastUpdated).toLocaleString()}`;
+      root.appendChild(upd);
+    }
+
+    function displayError(msg) {
+      document.getElementById('content').innerHTML = `<div class="error-message">⚠️ ${msg}</div>`;
+    }
+
+    function fetchData() {
+      fetch(`${API_URL}?key=${API_KEY}`)
+        .then(r => r.ok ? r.json() : Promise.reject(r.statusText))
+        .then(d => {
+          if (!(d && (d.success || d.ok))) {
+            displayError(d && d.message ? d.message : 'Unexpected response');
+            return;
+          }
+          const normalized = {
+            ...d,
+            lastUpdated: d.lastUpdated || d.lastIngestedAt || d.updatedAt || new Date().toISOString(),
+          };
+          displayData(normalized);
+        })
+        .catch(e => displayError(`Unable to load data: ${e}`));
+    }
+
+    fetchData();
+    setInterval(fetchData, 600000);
+  </script>
+</body>
+</html>
